@@ -15,7 +15,10 @@ func isMeta(b byte) bool {
 	return null == b || meta <= b && b <= marker
 }
 
-// Metafy marks and converts meta charactors(0x83-0xa2)
+// Convert func will metafy/unmetafy zsh_history file.
+type Convert func(io.Reader, io.Writer) error
+
+// Metafy marks and converts meta characters(0x83-0xa2).
 func Metafy(in io.Reader, out io.Writer) error {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
@@ -42,7 +45,7 @@ func Metafy(in io.Reader, out io.Writer) error {
 	}
 }
 
-// Unmetafy trims marking charactors and deconverts meta charactors(0x83-0xa2)
+// Unmetafy trims marking characters and deconverts meta characters(0x83-0xa2).
 func Unmetafy(in io.Reader, out io.Writer) error {
 	reader := bufio.NewReader(in)
 	writer := bufio.NewWriter(out)
