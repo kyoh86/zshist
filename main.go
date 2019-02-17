@@ -16,8 +16,16 @@ func main() {
 
 	var i input
 	var o output
-	defer i.Close()
-	defer o.Close()
+	defer func() {
+		if err := i.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	defer func() {
+		if err := o.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	inputFlag(enc, &i)
 	inputFlag(dec, &i)
