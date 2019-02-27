@@ -9,8 +9,15 @@ import (
 	"github.com/kyoh86/zshist/zshist"
 )
 
+// nolint
+var (
+	version = "snapshot"
+	commit  = "snapshot"
+	date    = "snapshot"
+)
+
 func main() {
-	app := kingpin.New("zshist", "Encode(metafy) / decode(unmetafy) .zsh_history file")
+	app := kingpin.New("zshist", "Encode(metafy) / decode(unmetafy) .zsh_history file").Version(version).Author("kyoh86")
 	enc := app.Command("encode", "Encode(metafy) .zsh_history file").Alias("metafy")
 	dec := app.Command("decode", "Decode(unmetafy) .zsh_history file").Alias("unmetafy")
 
