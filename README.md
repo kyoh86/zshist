@@ -1,10 +1,9 @@
 # zshist
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/kyoh86/zshist)](https://goreportcard.com/report/github.com/kyoh86/zshist)
-[![CircleCI](https://img.shields.io/circleci/project/github/kyoh86/zshist.svg)](https://circleci.com/gh/kyoh86/zshist)
-[![Coverage Status](https://img.shields.io/codecov/c/github/kyoh86/zshist.svg)](https://codecov.io/gh/kyoh86/zshist)
-
 Encode(metafy) / decode(unmetafy) .zsh_history file
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/kyoh86/zshist)](https://goreportcard.com/report/github.com/kyoh86/zshist)
+[![Coverage Status](https://img.shields.io/codecov/c/github/kyoh86/zshist.svg)](https://codecov.io/gh/kyoh86/zshist)
 
 ## Install
 
