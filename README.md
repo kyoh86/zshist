@@ -4,6 +4,7 @@ Encode(metafy) / decode(unmetafy) .zsh_history file
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kyoh86/zshist)](https://goreportcard.com/report/github.com/kyoh86/zshist)
 [![Coverage Status](https://img.shields.io/codecov/c/github/kyoh86/zshist.svg)](https://codecov.io/gh/kyoh86/zshist)
+[![Release](https://github.com/kyoh86/zshist/workflows/Release/badge.svg)](https://github.com/kyoh86/zshist/releases)
 
 ## Install
 
