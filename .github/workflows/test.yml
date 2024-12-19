@@ -1,76 +1,95 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Test
 on:
   push:
-    branches: '*'
+    branches:
+      - '*'
 jobs:
-  vendor:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-      - name: get dependencies
-        run: go get -v -t -d ./...
-      - name: vendoring
-        run: go mod vendor
-      - uses: actions/upload-artifact@v2
-        with:
-          name: repository
-          path: .
-  lint:
-    runs-on: ubuntu-latest
-    needs: vendor
-    steps:
-      - uses: actions/checkout@v3
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.50.1
   test:
-    runs-on: ubuntu-latest
-    needs: vendor
+    name: Test local sources
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/setup-go@v3
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.19
-      - uses: actions/download-artifact@v4.1.7
-        with:
-          name: repository
-          path: .
-      - name: test race
-        run: go test -v -race ./...
-  release-test:
+          go-version: 1.21
+      - name: Test Go
+        run: go test -v --race ./...
+  test-release:
+    name: Test releases
     runs-on: ubuntu-latest
-    needs: vendor
     steps:
-      - uses: actions/setup-go@v3
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.19
-      - uses: actions/download-artifact@v4.1.7
+          go-version: 1.21
+      - name: Try Bump-up Semantic Version
+        uses: kyoh86/git-vertag-action@v1
         with:
-          name: repository
-          path: .
-      - name: release (dry-run)
-        uses: goreleaser/goreleaser-action@v3
+          method: "patch"
+      - name: Run GoReleaser (dry-run)
+        uses: goreleaser/goreleaser-action@v6
         with:
-          args: release --rm-dist --skip-publish --snapshot
-  cover:
+          args: release --clean --skip=publish --snapshot
+  test-diagnostics:
+    name: Find diagnostics
     runs-on: ubuntu-latest
-    needs: vendor
     steps:
-      - uses: actions/setup-go@v3
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.19
-      - uses: actions/download-artifact@v4.1.7
+          go-version: 1.21
+      - name: Search diagnostics
+        uses: golangci/golangci-lint-action@v6
         with:
-          name: repository
-          path: .
-      - name: take coverage
-        run: go test -coverprofile=coverage.txt -covermode=count ./...
+          version: v1.61.0
+  test-covers:
+    name: Take test coverages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+      - name: Take coverage
+        run: go test -coverprofile=coverage.txt -covermode=atomic ./...
       - name: Send coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
           files: coverage.txt
+          token: ${{ secrets.CODECOV_TOKEN }}
+  set-releasable-status:
+    name: 'Mark commit status "releasable"'
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - test-diagnostics
+      - test-covers
+      - test-release
+    steps:
+      - name: 'Mark commit status "releasable"'
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f state='success' \
+            -f description='Mark the commit is able to release binary' \
+            -f context='releasable'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

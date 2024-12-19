@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 
+version: 2
 project_name: zshist
 builds:
   - id: default
@@ -21,10 +22,10 @@ brews:
   - install: |
       bin.install "zshist"
       man1.install Dir.glob('zshist*.1')
-    tap:
+    repository:
       owner: kyoh86
       name: homebrew-tap
-    folder: Formula
+    directory: Formula
     homepage: https://github.com/kyoh86/zshist
     description: Encode(metafy) / decode(unmetafy) .zsh_history file
     license: MIT
@@ -54,4 +55,4 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
-      - zshist.1
+      - zshist*.1

@@ -1,22 +1,53 @@
-name: Release
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Release binary to the GitHub Release
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+  workflow_dispatch:
+    inputs:
+      method:
+        description: |
+          Which number to increment in the semantic versioning.
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
 jobs:
-  release:
+  release-binary:
+    name: Release Binary
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - name: Check Actor
+        if: github.actor != 'kyoh86'
+        run: exit 1
+      - name: Check Branch
+        if: github.ref != 'refs/heads/main'
+        run: exit 1
+      - name: Wait commit status
+        uses: cloudposse/github-action-wait-commit-status@main
         with:
-          go-version: 1.19
-      - name: get dependencies
-        run: go get -v -t -d ./...
-      - name: test race
-        run: go test -v -race ./...
-      - uses: goreleaser/goreleaser-action@v3
+          repository: ${{ github.repository }}
+          sha: ${{ github.sha }}
+          status: releasable
+          token: ${{ github.token }}
+          check-retry-count: 5
+          check-retry-interval: 20
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+      - name: Bump-up Semantic Version
+        uses: kyoh86/git-vertag-action@v1
         with:
-          args: release --rm-dist
+          # method: "major", "minor" or "patch" to update tag with semver
+          method: "${{ github.event.inputs.method }}"
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN }}
+        with:
+          version: ~> v2
+          args: release --clean

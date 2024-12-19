@@ -10,7 +10,7 @@ Encode(metafy) / decode(unmetafy) .zsh_history file
 ## Install
 
 ```
-go get github.com/kyoh86/zshist
+go install github.com/kyoh86/zshist@latest
 ```
 
 ## Usage

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"os"
@@ -20,6 +22,7 @@ func main() {
 	app := kingpin.New("zshist", "Encode(metafy) / decode(unmetafy) .zsh_history file").Version(version).Author("kyoh86")
 	enc := app.Command("encode", "Encode(metafy) .zsh_history file").Alias("metafy")
 	dec := app.Command("decode", "Decode(unmetafy) .zsh_history file").Alias("unmetafy")
+	prs := app.Command("parse", "Parse .zsh_history file")
 
 	var i input
 	var o output
@@ -36,24 +39,41 @@ func main() {
 
 	inputFlag(enc, &i)
 	inputFlag(dec, &i)
+	inputFlag(prs, &i)
 	outputFlag(enc, &o)
 	outputFlag(dec, &o)
+	outputFlag(prs, &o)
 
 	command, err := app.Parse(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var convert zshist.Convert
 	switch command {
 	case enc.FullCommand():
-		convert = zshist.Metafy
+		if _, err := io.Copy(zshist.NewMetafier(o.Writer()), i.Reader()); err != nil {
+			log.Fatalf("failed to metafy: %s", err)
+		}
 	case dec.FullCommand():
-		convert = zshist.Unmetafy
-	}
-
-	if err := convert(i.Reader(), o.Writer()); err != nil {
-		log.Fatal(err)
+		if _, err := io.Copy(zshist.NewUnmetafier(o.Writer()), i.Reader()); err != nil {
+			log.Fatalf("failed to unmetafy: %s", err)
+		}
+	case prs.FullCommand():
+		var buf bytes.Buffer
+		if _, err := io.Copy(zshist.NewUnmetafier(&buf), i.Reader()); err != nil {
+			log.Fatalf("failed to unmetafy: %s", err)
+		}
+		parser := zshist.NewParser(&buf)
+		writer := json.NewEncoder(o.Writer())
+		for parser.Scan() {
+			entry := parser.Entry()
+			if err := writer.Encode(entry); err != nil {
+				log.Fatal(err)
+			}
+		}
+		if err := parser.Err(); err != nil {
+			log.Fatalf("failed to parse: %s", err)
+		}
 	}
 }
 
